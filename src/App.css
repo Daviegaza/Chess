@@ -1,0 +1,229 @@
+/* ── App-level styles ────────────────────────────────────────────────────────
+   Global layout, screen transitions, and shared component utilities.
+   Component-specific styles are handled inline via style props.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Screen Wrapper ──────────────────────────────────────────────────────── */
+.app-screen {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: radial-gradient(ellipse at 20% 30%, #1a0e00 0%, #0a0a0f 55%, #050508 100%);
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* ── Fade-in animation for screen transitions ────────────────────────────── */
+.screen-enter {
+  animation: screenFadeIn 0.3s ease forwards;
+}
+
+@keyframes screenFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Top Navigation Bar ──────────────────────────────────────────────────── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  box-sizing: border-box;
+}
+
+/* ── Balance Pill ────────────────────────────────────────────────────────── */
+.balance-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.balance-pill__label {
+  color: #5a4030;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.balance-pill__value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #d4a820;
+}
+
+.balance-pill__value--low {
+  color: #f87171;
+}
+
+/* ── Player / AI Turn Indicators ─────────────────────────────────────────── */
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.turn-indicator__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.turn-indicator__dot--active-white {
+  background: #d4a820;
+  box-shadow: 0 0 8px #d4a820;
+}
+
+.turn-indicator__dot--active-blue {
+  background: #7dd3fc;
+  box-shadow: 0 0 8px #7dd3fc;
+}
+
+.turn-indicator__dot--inactive {
+  background: #3a3a4a;
+}
+
+/* ── Game Board Area ─────────────────────────────────────────────────────── */
+.board-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Main Game Layout: board + sidebar ───────────────────────────────────── */
+.game-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.game-layout--desktop {
+  flex-direction: row;
+  justify-content: center;
+}
+
+.game-layout--mobile {
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Card / Panel base ───────────────────────────────────────────────────── */
+.panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+.panel--gold {
+  background: linear-gradient(135deg, #1a1208 0%, #0f0b06 100%);
+  border-color: #3a2810;
+}
+
+/* ── Section Label ───────────────────────────────────────────────────────── */
+.section-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #6a5030;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Button base ─────────────────────────────────────────────────────────── */
+.btn {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: filter 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn--gold {
+  background: rgba(200, 150, 0, 0.12);
+  border-color: rgba(200, 150, 0, 0.35);
+  color: #d4a820;
+}
+
+.btn--gold:hover {
+  background: rgba(200, 150, 0, 0.22);
+  border-color: rgba(200, 150, 0, 0.6);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: #3a2810;
+  color: #8a6840;
+}
+
+.btn--ghost:hover {
+  border-color: #8a6840;
+  color: #d4a820;
+}
+
+.btn--danger {
+  background: transparent;
+  border-color: rgba(200, 50, 50, 0.4);
+  color: rgba(200, 80, 80, 0.8);
+}
+
+.btn--danger:hover {
+  background: rgba(200, 50, 50, 0.15);
+  color: #f87171;
+}
+
+.btn--full {
+  width: 100%;
+}
+
+/* ── Responsive helpers ──────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .hide-mobile { display: none !important; }
+  .btn { padding: 13px 18px; font-size: 11px; }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hide-tablet { display: none !important; }
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop { display: none !important; }
+}
+
+/* ── Gradient text utility ───────────────────────────────────────────────── */
+.text-gold-gradient {
+  background: linear-gradient(180deg, #f0c040 0%, #d4a820 50%, #a07010 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Glow utilities ──────────────────────────────────────────────────────── */
+.glow-gold  { text-shadow: 0 0 30px rgba(212, 168, 32, 0.4); }
+.glow-green { text-shadow: 0 0 30px rgba(74, 222, 128, 0.4); }
+.glow-red   { text-shadow: 0 0 30px rgba(248, 113, 113, 0.4); }
