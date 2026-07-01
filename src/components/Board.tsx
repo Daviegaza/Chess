@@ -30,21 +30,16 @@ const Board: React.FC<BoardProps> = ({
   const boardSize = squareSize * 8;
 
   return (
+    <div className="kf-board-frame" style={{ opacity: isAITurn ? 0.94 : 1, transition: 'opacity 0.3s ease' }}>
     <div
+      className="kf-board-frame__inner"
       style={{
         width: boardSize,
         height: boardSize,
         display: 'grid',
         gridTemplateColumns: `repeat(8, ${squareSize}px)`,
         gridTemplateRows: `repeat(8, ${squareSize}px)`,
-        border: '3px solid #8a6020',
-        borderRadius: 4,
-        boxShadow:
-          '0 0 0 1px #5a3a10, 0 20px 60px rgba(0,0,0,0.8), 0 4px 15px rgba(200,150,0,0.15)',
-        overflow: 'hidden',
         cursor: isAITurn ? 'not-allowed' : 'default',
-        opacity: isAITurn ? 0.92 : 1,
-        transition: 'opacity 0.3s ease',
       }}
     >
       {board.map((rowArr, row) =>
@@ -82,6 +77,7 @@ const Board: React.FC<BoardProps> = ({
           );
         })
       )}
+    </div>
     </div>
   );
 };

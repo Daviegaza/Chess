@@ -17,46 +17,43 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ color, onChoose }) => {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.88)',
+      background: 'rgba(0,0,0,0.72)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 100, backdropFilter: 'blur(6px)',
+      zIndex: 100, backdropFilter: 'blur(8px)',
       padding: 16,
+      animation: 'kf-fade-in 0.2s ease forwards',
     }}>
-      <div style={{
-        background: 'linear-gradient(160deg, #1a1208 0%, #0d0a05 100%)',
-        border: '1px solid #8a6020',
-        borderRadius: 12,
+      <div className="kf-panel" style={{
         padding: isMobile ? '24px 20px' : '32px 40px',
         textAlign: 'center',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(200,150,0,0.1)',
         width: '100%',
-        maxWidth: 340,
-        boxSizing: 'border-box',
+        maxWidth: 380,
       }}>
-        <p style={{
-          color: '#d4a820', 
-          fontSize: 16, fontWeight: 700, letterSpacing: '0.12em',
-          marginBottom: 20, textTransform: 'uppercase',
+        <div className="kf-eyebrow" style={{ marginBottom: 4 }}>Promotion</div>
+        <h3 className="kf-serif kf-gold-text" style={{
+          fontSize: 20, fontWeight: 900, letterSpacing: '0.18em',
+          margin: '0 0 20px',
         }}>
-          Choose Promotion
-        </p>
+          CHOOSE YOUR PIECE
+        </h3>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
           {PROMOTION_PIECES.map(pieceType => (
             <button
               key={pieceType}
               onClick={() => onChoose(pieceType)}
+              className="kf-panel kf-panel--interactive"
               style={{
                 width: btnSize, height: btnSize,
-                background: 'rgba(200,150,0,0.1)',
-                border: '1px solid #8a6020',
-                borderRadius: 8, cursor: 'pointer',
+                border: '1px solid var(--kf-border-strong)',
+                borderRadius: 10,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
-                gap: 4, transition: 'all 0.15s ease',
+                gap: 2,
+                background: 'linear-gradient(160deg, #1a1208 0%, #0d0a05 100%)',
               }}
             >
-              <ChessPiece piece={{ type: pieceType, color }} size={btnSize - 16} />
-              <span style={{ color: '#9a7a40', fontSize: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <ChessPiece piece={{ type: pieceType, color }} size={btnSize - 20} />
+              <span className="kf-eyebrow" style={{ fontSize: 8 }}>
                 {pieceType}
               </span>
             </button>

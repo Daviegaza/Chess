@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   Board,
   CastlingRights,
@@ -53,7 +53,9 @@ export interface UseChessGameReturn {
   applyExternalMove: (move: Move) => void;
   resolvePromotion: (pieceType: PieceType) => void;
   resetGame: () => void;
+  undoLastMove: (plies?: number) => boolean;
   isGameOver: boolean;
+  canUndo: boolean;
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -70,11 +72,15 @@ function getCapturedFromMove(board: Board, move: Move): Piece | null {
 
 export function useChessGame(): UseChessGameReturn {
   const [gameState, setGameState] = useState<GameState>(makeInitialState);
+  const historyStack = useRef<GameState[]>([]);
 
   const isGameOver = gameState.isCheckmate || gameState.isStalemate;
+  const canUndo = historyStack.current.length > 0 && !isGameOver;
 
   // ── Commit a validated Move to the state ──────────────────────────────────
   const commitMove = useCallback((state: GameState, move: Move): GameState => {
+    historyStack.current.push(state);
+    if (historyStack.current.length > 200) historyStack.current.shift();
     const captured = getCapturedFromMove(state.board, move);
     const notation = moveToNotation(move, state.board);
     const nextBoard = applyMove(state.board, move);
@@ -214,7 +220,19 @@ export function useChessGame(): UseChessGameReturn {
 
   // ── Reset ─────────────────────────────────────────────────────────────────
   const resetGame = useCallback(() => {
+    historyStack.current = [];
     setGameState(makeInitialState());
+  }, []);
+
+  // ── Undo last N plies (default 2 — reverts both AI + player) ──────────────
+  const undoLastMove = useCallback((plies = 2): boolean => {
+    if (historyStack.current.length === 0) return false;
+    const target = Math.min(plies, historyStack.current.length);
+    let restored: GameState | undefined;
+    for (let i = 0; i < target; i++) restored = historyStack.current.pop();
+    if (!restored) return false;
+    setGameState(restored);
+    return true;
   }, []);
 
   return {
@@ -223,6 +241,8 @@ export function useChessGame(): UseChessGameReturn {
     applyExternalMove,
     resolvePromotion,
     resetGame,
+    undoLastMove,
     isGameOver,
+    canUndo,
   };
 }

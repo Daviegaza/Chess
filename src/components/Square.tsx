@@ -1,5 +1,5 @@
 import React from 'react';
-import { Piece, Position } from '../types/chess.types';
+import type { Piece, Position } from '../types/chess.types';
 import ChessPiece from './ChessPiece';
 
 interface SquareProps {
@@ -14,6 +14,12 @@ interface SquareProps {
   squareSize: number;
 }
 
+// House-of-Kingfall board palette: parchment cream + deep emerald.
+const LIGHT = '#ebe0b6';
+const DARK  = '#2f5a44';
+const LIGHT_TEXT = '#2f5a44';
+const DARK_TEXT  = '#ebe0b6';
+
 const Square: React.FC<SquareProps> = ({
   row,
   col,
@@ -26,22 +32,27 @@ const Square: React.FC<SquareProps> = ({
   squareSize,
 }) => {
   const isLight = (row + col) % 2 === 0;
+  const bg = isLight ? LIGHT : DARK;
 
-  let bg = isLight ? '#c8a97a' : '#7a4f2e';
-
+  let overlay: string | null = null;
   if (isSelected) {
-    bg = '#d4a820';
+    overlay = 'rgba(212, 168, 52, 0.45)';
   } else if (isLastMove) {
-    bg = isLight ? '#cdd26a' : '#aaa23a';
+    overlay = 'rgba(212, 168, 52, 0.22)';
   } else if (isCheck && piece?.type === 'king') {
-    bg = '#c0392b';
+    overlay = 'rgba(217, 72, 72, 0.55)';
   }
 
   const handleClick = () => onClick({ row, col });
 
+  const interactive = !!(piece || isLegalMove);
   return (
     <div
       onClick={handleClick}
+      className={[
+        interactive ? 'kf-square-hover' : '',
+        isCheck && piece?.type === 'king' ? 'kf-check-flash' : '',
+      ].filter(Boolean).join(' ')}
       style={{
         width: squareSize,
         height: squareSize,
@@ -50,56 +61,67 @@ const Square: React.FC<SquareProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        cursor: piece || isLegalMove ? 'pointer' : 'default',
-        transition: 'background 0.15s ease',
+        cursor: interactive ? 'pointer' : 'default',
         boxSizing: 'border-box',
+        transition: 'background 0.15s ease',
       }}
     >
-      {/* Legal move indicator */}
-      {isLegalMove && (
+      {overlay && (
         <div
           style={{
             position: 'absolute',
-            width: piece ? '100%' : '33%',
-            height: piece ? '100%' : '33%',
-            borderRadius: piece ? 0 : '50%',
-            background: piece
-              ? 'rgba(0,0,0,0)'
-              : 'rgba(10, 10, 10, 0.35)',
-            border: piece
-              ? '4px solid rgba(10,10,10,0.4)'
-              : 'none',
-            boxSizing: 'border-box',
+            inset: 0,
+            background: overlay,
             pointerEvents: 'none',
-            zIndex: 2,
+            zIndex: 1,
           }}
         />
       )}
 
-      {/* Piece */}
+      {isLegalMove && (
+        <div
+          className="kf-dot-pulse"
+          style={{
+            position: 'absolute',
+            width: piece ? '82%' : '30%',
+            height: piece ? '82%' : '30%',
+            borderRadius: '50%',
+            background: piece ? 'transparent' : 'rgba(212, 168, 52, 0.55)',
+            border: piece ? '3px solid rgba(212, 168, 52, 0.75)' : 'none',
+            boxSizing: 'border-box',
+            pointerEvents: 'none',
+            zIndex: 2,
+            boxShadow: piece ? '0 0 12px rgba(212, 168, 52, 0.5)' : 'none',
+          }}
+        />
+      )}
+
       {piece && (
         <div
+          key={`${piece.color}-${piece.type}-${isLastMove ? 'moved' : 'still'}`}
+          className={isLastMove ? 'kf-piece-arrive' : ''}
           style={{
             position: 'relative',
             zIndex: 3,
-            transform: isSelected ? 'scale(1.1)' : 'scale(1)',
-            transition: 'transform 0.1s ease',
+            transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+            transition: 'transform 0.12s ease',
           }}
         >
           <ChessPiece piece={piece} size={squareSize} />
         </div>
       )}
 
-      {/* Coordinate labels */}
       {col === 0 && (
         <span
           style={{
             position: 'absolute',
-            top: 2,
-            left: 3,
-            fontSize: 11,
+            top: 3,
+            left: 4,
+            fontSize: Math.max(9, Math.round(squareSize * 0.14)),
             fontWeight: 700,
-            color: isLight ? '#7a4f2e' : '#c8a97a',
+            fontFamily: "'Cinzel', Georgia, serif",
+            color: isLight ? LIGHT_TEXT : DARK_TEXT,
+            opacity: 0.55,
             lineHeight: 1,
             pointerEvents: 'none',
             zIndex: 4,
@@ -108,21 +130,24 @@ const Square: React.FC<SquareProps> = ({
           {8 - row}
         </span>
       )}
+
       {row === 7 && (
         <span
           style={{
             position: 'absolute',
-            bottom: 2,
-            right: 3,
-            fontSize: 11,
+            bottom: 3,
+            right: 5,
+            fontSize: Math.max(9, Math.round(squareSize * 0.14)),
             fontWeight: 700,
-            color: isLight ? '#7a4f2e' : '#c8a97a',
+            fontFamily: "'Cinzel', Georgia, serif",
+            color: isLight ? LIGHT_TEXT : DARK_TEXT,
+            opacity: 0.55,
             lineHeight: 1,
             pointerEvents: 'none',
             zIndex: 4,
           }}
         >
-          {String.fromCharCode(97 + col)}
+          {String.fromCharCode(97 + col).toUpperCase()}
         </span>
       )}
     </div>
