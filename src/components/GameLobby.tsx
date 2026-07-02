@@ -372,14 +372,15 @@ const GameLobby: React.FC<GameLobbyProps> = ({ points, onStartGame, onResetPoint
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {levels.map(cfg => {
             const canPlay = points.balance > cfg.cost;
-            const diffTag = ({ easy: 'EASY', medium: 'MEDIUM', hard: 'HARD', expert: 'EXPERT' } as const)[cfg.level];
+            const diffTag = ({ easy: 'EASY', medium: 'MEDIUM', hard: 'HARD', expert: 'EXPERT', highroller: 'ELITE' } as const)[cfg.level];
             const diffTint = ({
-              easy:   '#4ade80',
-              medium: '#e4b944',
-              hard:   '#f0a030',
-              expert: '#d94848',
+              easy:       '#4ade80',
+              medium:     '#e4b944',
+              hard:       '#f0a030',
+              expert:     '#8b5cf6',
+              highroller: '#fb7185',
             } as const)[cfg.level];
-            const aiElo = ({ easy: 900, medium: 1200, hard: 1600, expert: 2000 } as const)[cfg.level];
+            const aiElo = ({ easy: 900, medium: 1200, hard: 1600, expert: 2000, highroller: 2400 } as const)[cfg.level];
             return (
               <div
                 key={cfg.level}

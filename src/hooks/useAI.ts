@@ -14,10 +14,11 @@ interface UseAIOptions {
 
 // Delay ranges (ms) per difficulty – makes it feel human
 const AI_DELAY: Record<DifficultyLevel, [number, number]> = {
-  easy:   [400, 800],
-  medium: [600, 1200],
-  hard:   [800, 1600],
-  expert: [1000, 2200],
+  easy:       [400, 800],
+  medium:     [600, 1200],
+  hard:       [800, 1600],
+  expert:     [1000, 2200],
+  highroller: [1200, 2600],
 };
 
 export function useAI({

@@ -188,13 +188,14 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-export type AILevel = 'easy' | 'medium' | 'hard' | 'expert';
+export type AILevel = 'easy' | 'medium' | 'hard' | 'expert' | 'highroller';
 
 const DEPTH_MAP: Record<AILevel, number> = {
   easy: 0,
   medium: 2,
   hard: 3,
   expert: 4,
+  highroller: 5,
 };
 
 export function getAIMove(
