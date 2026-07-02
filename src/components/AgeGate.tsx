@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useSoundFX } from '../hooks/useSoundFX';
 
 interface AgeGateProps {
   onAcknowledge: () => void;
@@ -6,6 +7,17 @@ interface AgeGateProps {
 
 const AgeGate: React.FC<AgeGateProps> = ({ onAcknowledge }) => {
   const [checked, setChecked] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const { play } = useSoundFX();
+
+  useEffect(() => {
+    if (checked && btnRef.current) btnRef.current.focus();
+  }, [checked]);
+
+  const handleAccept = () => {
+    play('coin');
+    onAcknowledge();
+  };
 
   return (
     <div style={{
@@ -68,8 +80,10 @@ const AgeGate: React.FC<AgeGateProps> = ({ onAcknowledge }) => {
         </label>
 
         <button
-          onClick={onAcknowledge}
+          ref={btnRef}
+          onClick={handleAccept}
           disabled={!checked}
+          className="kf-tap"
           style={{
             width: '100%',
             background: checked

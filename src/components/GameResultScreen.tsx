@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import type { GameResult, LevelConfig, PointsState } from '../types/game.types';
 import { useWindowSize } from '../hooks/useWindowSize';
 import ChessPiece from './ChessPiece';
+import Confetti from './Confetti';
 import { sfx } from '../utils/soundEngine';
 import type { Piece } from '../types/chess.types';
 
@@ -118,14 +119,22 @@ const GameResultScreen: React.FC<GameResultScreenProps> = ({
     : result.pointsChange < 0 ? `${result.pointsChange}` : '±0';
 
   const confettiRef = useConfetti(isWin, 'gold');
+  const playAgainRef = useRef<HTMLButtonElement>(null);
+
+  // Autofocus Play Again so keyboard users can Enter immediately
+  useEffect(() => {
+    const t = setTimeout(() => { playAgainRef.current?.focus(); }, 250);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div
       className="kf-screen kf-fade-in"
       style={{
         justifyContent: 'center',
-        padding: isMobile ? '32px 20px' : '40px',
+        padding: isMobile ? '24px 16px calc(130px + var(--kf-safe-bottom))' : '40px',
         position: 'relative',
+        minHeight: 'auto',
       }}
     >
       {isWin && (
@@ -137,6 +146,7 @@ const GameResultScreen: React.FC<GameResultScreenProps> = ({
           }}
         />
       )}
+      <Confetti active={isWin} intense={result.jackpotHit} />
 
       <div style={{ textAlign: 'center', width: '100%', maxWidth: 460, position: 'relative', zIndex: 1 }}>
 
@@ -204,14 +214,15 @@ const GameResultScreen: React.FC<GameResultScreenProps> = ({
           gap: 12, justifyContent: 'center',
         }}>
           <button
-            className="kf-btn kf-btn--gold"
+            ref={playAgainRef}
+            className="kf-btn kf-btn--gold kf-tap"
             style={{ width: isMobile ? '100%' : 'auto' }}
             onClick={() => { sfx.click(); onPlayAgain(); }}
           >
             Play Again
           </button>
           <button
-            className="kf-btn"
+            className="kf-btn kf-tap"
             style={{ width: isMobile ? '100%' : 'auto' }}
             onClick={() => { sfx.click(); onBackToLobby(); }}
           >

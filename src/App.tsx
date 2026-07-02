@@ -658,7 +658,7 @@ const App: React.FC = () => {
         <div
           className="kf-fade-in"
           style={{
-            padding: isMobile ? '8px 8px calc(100px + var(--kf-safe-bottom))' : '24px 20px 40px',
+            padding: isMobile ? '8px 8px 12px' : '24px 20px 40px',
             gap: isMobile ? 8 : 14,
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             minWidth: 0, boxSizing: 'border-box', width: '100%',
@@ -869,6 +869,7 @@ const App: React.FC = () => {
               <button
                 key={a.key}
                 disabled={a.disabled}
+                className="kf-tap"
                 onClick={() => {
                   if (a.disabled) { sfx.illegal(); return; }
                   if (a.onClick) a.onClick();

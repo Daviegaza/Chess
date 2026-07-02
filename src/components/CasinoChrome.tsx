@@ -386,7 +386,7 @@ const CasinoChrome: React.FC<Props> = ({
       </div>
 
       {isMobile ? (
-        <div style={{ flex: 1, paddingBottom: `calc(84px + var(--kf-safe-bottom))` }}>{children}</div>
+        <div style={{ flex: 1, paddingBottom: `calc(110px + var(--kf-safe-bottom))`, minWidth: 0 }}>{children}</div>
       ) : (
         <div style={{
           flex: 1,

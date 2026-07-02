@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ACHIEVEMENTS, CHIP_SKINS, CHIP_SKIN_ORDER, ChipSkinId,
   DifficultyLevel, LEVEL_CONFIGS,
@@ -37,19 +37,28 @@ interface ShellProps {
   children: React.ReactNode;
 }
 
-const Backdrop: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => (
-  <div
-    onClick={onClose}
-    style={{
-      position: 'fixed', inset: 0, zIndex: 300,
-      background: 'rgba(10,14,25,0.6)', backdropFilter: 'blur(12px) saturate(1.1)', WebkitBackdropFilter: 'blur(12px) saturate(1.1)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 16, animation: 'kfSlideUp 0.28s ease both',
-    }}
-  >
-    {children}
-  </div>
-);
+const Backdrop: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        background: 'rgba(10,14,25,0.6)', backdropFilter: 'blur(12px) saturate(1.1)', WebkitBackdropFilter: 'blur(12px) saturate(1.1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16, animation: 'kfSlideUp 0.28s ease both',
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 export const ModalShell: React.FC<ShellProps> = ({ title, subtitle, accent = PURPLE, onClose, children }) => (
   <Backdrop onClose={onClose}>
