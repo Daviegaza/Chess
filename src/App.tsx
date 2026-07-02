@@ -47,7 +47,7 @@ const App: React.FC = () => {
   const [activeConfig, setActiveConfig] = useState<LevelConfig>(LEVEL_CONFIGS.easy);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [activeModal, setActiveModal] = useState<ModalKey>(null);
-  const [showTabQuitConfirm, setShowTabQuitConfirm] = useState(false);
+  const [pendingQuitAction, setPendingQuitAction] = useState<'lobby' | 'fold' | null>(null);
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [sideBetState, setSideBetState] = useState<SideBetState>(makeInitialSideBetState);
   const [whiteTime, setWhiteTime] = useState<number>(0);
@@ -347,8 +347,8 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGameOver, gameState.isCheckmate, gameState.currentTurn, gameState.isStalemate, screen]);
 
-  // ── Resign ─────────────────────────────────────────────────────────────────
-  const handleResign = useCallback(() => {
+  // ── Resign (with confirm) ──────────────────────────────────────────────────
+  const doResign = useCallback(() => {
     if (resultHandled.current) return;
     resultHandled.current = true;
     const outcome = resolveRound('computer_win', activeConfig, sideBetState, onMetricsCallback);
@@ -358,6 +358,15 @@ const App: React.FC = () => {
     sfx.defeat();
     setScreen('result');
   }, [resolveRound, activeConfig, sideBetState, onMetricsCallback, play]);
+
+  const handleResign = useCallback(() => {
+    if (screen === 'playing' && !isGameOver) {
+      play('chipClick');
+      setPendingQuitAction('fold');
+    } else {
+      doResign();
+    }
+  }, [screen, isGameOver, play, doResign]);
 
   // ── Undo / Hint ────────────────────────────────────────────────────────────
   const handleUndo = useCallback(() => {
@@ -452,7 +461,7 @@ const App: React.FC = () => {
       if (k === 'play') {
         setActiveModal(null);
         if (screen === 'playing' && !isGameOver) {
-          setShowTabQuitConfirm(true);
+          setPendingQuitAction('lobby');
         } else {
           setScreen('lobby');
         }
@@ -466,9 +475,9 @@ const App: React.FC = () => {
     activeNav: 'play' as 'play',
   };
 
-  const tabQuitConfirmOverlay = showTabQuitConfirm ? (
+  const tabQuitConfirmOverlay = pendingQuitAction ? (
     <div
-      onClick={() => setShowTabQuitConfirm(false)}
+      onClick={() => setPendingQuitAction(null)}
       style={{
         position: 'fixed', inset: 0, zIndex: 450,
         background: 'rgba(10,14,25,0.62)',
@@ -493,16 +502,18 @@ const App: React.FC = () => {
         <div style={{
           fontFamily: "'Cinzel', serif", fontSize: 14, letterSpacing: '0.28em',
           color: '#ef4444', fontWeight: 900,
-        }}>QUIT ROUND?</div>
+        }}>{pendingQuitAction === 'fold' ? 'FOLD HAND?' : 'QUIT ROUND?'}</div>
         <div style={{
           fontFamily: "'Crimson Pro', serif", fontSize: 14, color: '#e2e8f0',
           marginTop: 10, lineHeight: 1.5,
         }}>
-          You'll forfeit this hand and lose your buy-in. The throne room will be waiting when you return.
+          {pendingQuitAction === 'fold'
+            ? 'Folding forfeits the round to the AI. Your buy-in is gone.'
+            : "You'll forfeit this hand and lose your buy-in. The throne room will be waiting when you return."}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 }}>
           <button
-            onClick={() => { play('chipClick'); setShowTabQuitConfirm(false); }}
+            onClick={() => { play('chipClick'); setPendingQuitAction(null); }}
             className="kf-tap"
             style={{
               padding: 14, borderRadius: 12, cursor: 'pointer',
@@ -515,8 +526,10 @@ const App: React.FC = () => {
           >NO · KEEP PLAYING</button>
           <button
             onClick={() => {
-              setShowTabQuitConfirm(false);
-              handleResign();
+              const action = pendingQuitAction;
+              setPendingQuitAction(null);
+              if (action === 'fold') doResign();
+              else setScreen('lobby');
             }}
             className="kf-tap"
             style={{
@@ -527,7 +540,7 @@ const App: React.FC = () => {
               fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.24em', fontWeight: 900,
               minHeight: 52, boxShadow: '0 8px 22px rgba(239,68,68,0.4)',
             }}
-          >YES · QUIT</button>
+          >{pendingQuitAction === 'fold' ? 'YES · FOLD' : 'YES · QUIT'}</button>
         </div>
       </div>
     </div>
@@ -674,7 +687,7 @@ const App: React.FC = () => {
               onClick={() => {
                 sfx.click();
                 if (screen === 'playing' && !isGameOver) {
-                  setShowTabQuitConfirm(true);
+                  setPendingQuitAction('lobby');
                 } else {
                   setScreen('lobby');
                 }
