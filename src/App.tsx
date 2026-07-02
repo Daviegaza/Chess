@@ -658,9 +658,10 @@ const App: React.FC = () => {
         <div
           className="kf-fade-in"
           style={{
-            padding: isMobile ? '14px 12px 24px' : '24px 20px 40px',
-            gap: isMobile ? 12 : 14,
+            padding: isMobile ? '8px 8px calc(100px + var(--kf-safe-bottom))' : '24px 20px 40px',
+            gap: isMobile ? 8 : 14,
             display: 'flex', flexDirection: 'column', alignItems: 'center',
+            minWidth: 0, boxSizing: 'border-box', width: '100%',
           }}
         >
           <div style={{
@@ -902,19 +903,14 @@ const App: React.FC = () => {
             ))}
           </div>
 
-          {/* Undo bar */}
+          {/* Undo bar — RESIGN lives in QUICK ACTIONS as FOLD */}
           <div style={{ width: '100%', maxWidth: contentMaxW, display: 'flex', gap: 8, marginTop: 4 }}>
             <button
               className="kf-btn"
               disabled={!canUndo || gameState.currentTurn !== 'white'}
               onClick={handleUndo}
               style={{ flex: 1 }}
-            >UNDO</button>
-            <button
-              className="kf-btn kf-btn--danger"
-              onClick={handleResign}
-              style={{ flex: 1 }}
-            >RESIGN</button>
+            >UNDO MOVE</button>
           </div>
 
           <GameStatus
@@ -926,14 +922,14 @@ const App: React.FC = () => {
             boardWidth={boardPx}
           />
 
-          {gameState.promotionPending && (
-            <PromotionModal
-              color={gameState.promotionPending.color}
-              onChoose={(p) => { sfx.select(); resolvePromotion(p); }}
-            />
-          )}
         </div>
       </CasinoChrome>
+      {gameState.promotionPending && (
+        <PromotionModal
+          color={gameState.promotionPending.color}
+          onChoose={(p) => { sfx.select(); resolvePromotion(p); }}
+        />
+      )}
       {modalOverlay}
       {tabQuitConfirmOverlay}
       <ParticleBurst trigger={burstSeq.n} x={burstSeq.x} y={burstSeq.y} color={burstSeq.color} count={burstSeq.count} />

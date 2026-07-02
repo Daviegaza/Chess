@@ -17,10 +17,11 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ color, onChoose }) => {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.72)',
+      background: 'rgba(10,14,31,0.68)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 100, backdropFilter: 'blur(8px)',
-      padding: 16,
+      zIndex: 600, backdropFilter: 'blur(10px) saturate(1.1)',
+      WebkitBackdropFilter: 'blur(10px) saturate(1.1)',
+      padding: 16, overflowY: 'auto',
       animation: 'kf-fade-in 0.2s ease forwards',
     }}>
       <div className="kf-panel" style={{
