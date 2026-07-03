@@ -50,8 +50,12 @@ const Square: React.FC<SquareProps> = ({
     <div
       onClick={handleClick}
       className={[
+        'kf-square-3d',
         interactive ? 'kf-square-hover' : '',
         isCheck && piece?.type === 'king' ? 'kf-check-flash' : '',
+        isLastMove ? 'kf-last-move' : '',
+        isLegalMove && !piece ? 'kf-valid-move' : '',
+        isLegalMove && piece ? 'kf-valid-capture' : '',
       ].filter(Boolean).join(' ')}
       style={{
         width: squareSize,
@@ -99,12 +103,15 @@ const Square: React.FC<SquareProps> = ({
       {piece && (
         <div
           key={`${piece.color}-${piece.type}-${isLastMove ? 'moved' : 'still'}`}
-          className={isLastMove ? 'kf-piece-arrive' : ''}
+          className={[
+            'kf-piece-3d',
+            isLastMove ? 'kf-piece-arrive kf-piece-moving' : '',
+            isSelected ? 'kf-piece-selected' : '',
+            isCheck && piece.type === 'king' ? 'kf-in-check' : '',
+          ].filter(Boolean).join(' ')}
           style={{
             position: 'relative',
             zIndex: 3,
-            transform: isSelected ? 'scale(1.08)' : 'scale(1)',
-            transition: 'transform 0.12s ease',
           }}
         >
           <ChessPiece piece={piece} size={squareSize} />

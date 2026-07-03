@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GameState, Move, Position } from '../types/chess.types';
 import Square from './Square';
 
@@ -29,8 +29,23 @@ const Board: React.FC<BoardProps> = ({
 
   const boardSize = squareSize * 8;
 
+  const [shake, setShake] = useState(false);
+  const prevMoveCountRef = useRef(moveHistory.length);
+  useEffect(() => {
+    if (moveHistory.length > prevMoveCountRef.current) {
+      const lastEntry = moveHistory[moveHistory.length - 1];
+      const shouldShake = !!(lastEntry && (lastEntry.capturedPiece || isCheck));
+      if (shouldShake) {
+        setShake(true);
+        const t = window.setTimeout(() => setShake(false), 460);
+        return () => window.clearTimeout(t);
+      }
+    }
+    prevMoveCountRef.current = moveHistory.length;
+  }, [moveHistory, isCheck]);
+
   return (
-    <div className="kf-board-frame" style={{ opacity: isAITurn ? 0.94 : 1, transition: 'opacity 0.3s ease' }}>
+    <div className={`kf-board-frame kf-board-3d kf-board-glow ${shake ? 'kf-shake' : ''}`} style={{ opacity: isAITurn ? 0.94 : 1, transition: 'opacity 0.5s cubic-bezier(0.2,1.1,0.4,1), transform 0.5s cubic-bezier(0.2,1.1,0.4,1)' }}>
     <div
       className="kf-board-frame__inner"
       style={{

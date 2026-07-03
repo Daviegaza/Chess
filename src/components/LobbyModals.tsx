@@ -602,7 +602,7 @@ export const CashierModal: React.FC<CashierModalProps> = ({ points, onAddChips, 
   return (
     <ModalShell
       title="CASHIER"
-      subtitle="Play-chip top-ups (this is a free-to-play demo — no real money)."
+      subtitle="Chip top-ups. Bigger stack, bigger swings."
       accent={GOLD}
       onClose={onClose}
     >
