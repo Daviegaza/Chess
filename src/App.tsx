@@ -11,6 +11,7 @@ import {
   RoundMetricDelta,
   SideBetId,
   SideBetState,
+  TimeControl,
   vipTierFor,
 } from './types/game.types';
 import { useChessGame } from './hooks/useChessGame';
@@ -20,6 +21,7 @@ import { useMissions } from './hooks/useMissions';
 import { useSession } from './hooks/useSession';
 import { useWindowSize } from './hooks/useWindowSize';
 import { useSoundFX } from './hooks/useSoundFX';
+import { useTimePref } from './hooks/useTimePref';
 import Board from './components/Board';
 import GameStatus from './components/GameStatus';
 import GameResultScreen from './components/GameResultScreen';
@@ -35,8 +37,14 @@ import {
 } from './components/LobbyModals';
 import { sfx } from './utils/soundEngine';
 
-function formatClock(sec: number): string {
+function formatClock(sec: number, showTenths = false): string {
   if (sec < 0) sec = 0;
+  if (showTenths) {
+    const clamped = Math.max(0, Math.floor(sec * 10) / 10);
+    const m = Math.floor(clamped / 60);
+    const s = clamped - m * 60;
+    return `${m}:${s.toFixed(1).padStart(4, '0')}`;
+  }
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
@@ -79,6 +87,7 @@ const App: React.FC = () => {
   const { muted, toggleMute, play, ambientOn, toggleAmbient } = useSoundFX();
   const missions = useMissions();
   const session = useSession();
+  const timePref = useTimePref();
 
   const [hintsLeft, setHintsLeft] = useState(3);
   const [hintSquares, setHintSquares] = useState<{ from: string; to: string } | null>(null);
@@ -174,17 +183,24 @@ const App: React.FC = () => {
 
   useEffect(() => { lastMoveIdxRef.current = 0; prevMoveLenRef.current = 0; }, [screen]);
 
-  // ── Chess clock ────────────────────────────────────────────────────────────
+  // ── Chess clock (rAF; float seconds) ───────────────────────────────────────
   useEffect(() => {
     if (screen !== 'playing' || isGameOver || gameState.promotionPending) return;
-    const id = setInterval(() => {
+    let raf = 0;
+    let last = performance.now();
+    const tick = () => {
+      const now = performance.now();
+      const dt = (now - last) / 1000;
+      last = now;
       if (gameState.currentTurn === 'white') {
-        setWhiteTime(t => Math.max(0, t - 1));
+        setWhiteTime(t => Math.max(0, t - dt));
       } else {
-        setBlackTime(t => Math.max(0, t - 1));
+        setBlackTime(t => Math.max(0, t - dt));
       }
-    }, 1000);
-    return () => clearInterval(id);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [screen, isGameOver, gameState.currentTurn, gameState.promotionPending]);
 
   const prevHistLen = useRef(0);
@@ -211,7 +227,8 @@ const App: React.FC = () => {
   const contentMaxW = isMobile ? '100%' : boardPx + 40;
 
   // ── Start / rematch ────────────────────────────────────────────────────────
-  const beginRound = useCallback((cfg: LevelConfig, betIds: SideBetId[]): boolean => {
+  const beginRound = useCallback((baseCfg: LevelConfig, betIds: SideBetId[], tcOverride?: TimeControl): boolean => {
+    const cfg: LevelConfig = tcOverride ? { ...baseCfg, timeControl: tcOverride } : baseCfg;
     if (!canAffordRound(cfg, betIds)) { play('error'); return false; }
     if (!placeRound(cfg, betIds)) { play('error'); return false; }
     play('chipDrop');
@@ -234,9 +251,9 @@ const App: React.FC = () => {
     return true;
   }, [canAffordRound, placeRound, play, resetGame]);
 
-  const handleStartGame = useCallback((level: DifficultyLevel, betIds: SideBetId[]) => {
-    beginRound(LEVEL_CONFIGS[level], betIds);
-  }, [beginRound]);
+  const handleStartGame = useCallback((level: DifficultyLevel, betIds: SideBetId[], tcOverride?: TimeControl) => {
+    beginRound(LEVEL_CONFIGS[level], betIds, tcOverride ?? timePref.selectedTc);
+  }, [beginRound, timePref.selectedTc]);
 
   // ── AI ─────────────────────────────────────────────────────────────────────
   const handleAIMove = useCallback((move: Parameters<typeof applyExternalMove>[0]) => {
@@ -276,7 +293,7 @@ const App: React.FC = () => {
   // ── Time-out ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (screen !== 'playing' || isGameOver || resultHandled.current) return;
-    if (whiteTime === 0) {
+    if (whiteTime <= 0) {
       resultHandled.current = true;
       const outcome = resolveRound('computer_win', activeConfig, sideBetState, onMetricsCallback);
       outcome.reason = 'Time forfeit — your clock ran out.';
@@ -284,7 +301,7 @@ const App: React.FC = () => {
       sfx.defeat();
       play('lose');
       setTimeout(() => setScreen('result'), 1200);
-    } else if (blackTime === 0) {
+    } else if (blackTime <= 0) {
       resultHandled.current = true;
       const outcome = resolveRound('player_win', activeConfig, sideBetState, onMetricsCallback);
       outcome.reason = "The AI's flag fell — victory on time!";
@@ -406,7 +423,7 @@ const App: React.FC = () => {
   );
 
   const handlePlayAgain = useCallback(() => {
-    const ok = beginRound(activeConfig, activeBetIds);
+    const ok = beginRound(activeConfig, activeBetIds, activeConfig.timeControl);
     if (!ok) setScreen('lobby');
   }, [beginRound, activeConfig, activeBetIds]);
 
@@ -438,8 +455,8 @@ const App: React.FC = () => {
   // ── Quick play ─────────────────────────────────────────────────────────────
   const handleQuickPlay = useCallback(() => {
     const quickLevel: DifficultyLevel = tier.tier >= 1 ? 'medium' : 'easy';
-    beginRound(LEVEL_CONFIGS[quickLevel], []);
-  }, [beginRound, tier.tier]);
+    beginRound(LEVEL_CONFIGS[quickLevel], [], timePref.selectedTc);
+  }, [beginRound, tier.tier, timePref.selectedTc]);
 
   // ── Age gate ───────────────────────────────────────────────────────────────
   if (!points.ageAcknowledged) {
@@ -592,7 +609,7 @@ const App: React.FC = () => {
       {activeModal === 'tables' && (
         <TablesModal
           points={points} tier={tier}
-          onPlay={(level) => { setActiveModal(null); handleStartGame(level, []); }}
+          onPlay={(level) => { setActiveModal(null); handleStartGame(level, [], timePref.selectedTc); }}
           onSfx={(n) => play(n)}
           onClose={() => setActiveModal(null)}
         />
@@ -631,6 +648,7 @@ const App: React.FC = () => {
             isMobile={isMobile}
             onBrowseTables={() => setActiveModal('tables')}
             onOpenAchievements={() => setActiveModal('achievements')}
+            timePref={timePref}
           />
         </CasinoChrome>
         {modalOverlay}
@@ -751,21 +769,42 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div style={{
-              padding: '8px 14px',
-              border: `1px solid ${gameState.currentTurn === 'black' && !isGameOver ? '#c4b5fd' : 'var(--kf-border)'}`,
-              borderRadius: 8,
-              background: 'rgba(0,0,0,0.35)',
-              minWidth: 76, textAlign: 'center',
-              boxShadow: gameState.currentTurn === 'black' && !isGameOver ? '0 0 12px rgba(139,92,246,0.4)' : 'none',
-            }}>
-              <div className="kf-serif" style={{
-                color: blackTime < 30 ? 'var(--kf-danger)' : 'var(--kf-cream)',
-                fontSize: 18, fontWeight: 900, letterSpacing: '0.06em', fontFeatureSettings: '"tnum"',
-              }}>
-                {formatClock(blackTime)}
-              </div>
-            </div>
+            {(() => {
+              const isActive = gameState.currentTurn === 'black' && !isGameOver;
+              const urgent = blackTime < 10;
+              const low = blackTime < 30;
+              const initial = Math.max(1, activeConfig.timeControl.initial);
+              const pct = Math.max(0, Math.min(100, (blackTime / initial) * 100));
+              return (
+                <div className={isActive && urgent ? 'kf-clock-urgent' : ''} style={{
+                  padding: '8px 14px',
+                  border: `1px solid ${isActive ? (urgent ? '#ef4444' : '#c4b5fd') : 'var(--kf-border)'}`,
+                  borderRadius: 8,
+                  background: 'rgba(0,0,0,0.35)',
+                  minWidth: 88, textAlign: 'center',
+                  boxShadow: isActive
+                    ? (urgent ? '0 0 16px rgba(239,68,68,0.55)' : '0 0 12px rgba(139,92,246,0.4)')
+                    : 'none',
+                }}>
+                  <div className="kf-serif" style={{
+                    color: urgent ? 'var(--kf-danger)' : low ? '#fbbf24' : 'var(--kf-cream)',
+                    fontSize: 18, fontWeight: 900, letterSpacing: '0.06em', fontFeatureSettings: '"tnum"',
+                  }}>
+                    {formatClock(blackTime, urgent)}
+                  </div>
+                  <div style={{
+                    marginTop: 4, height: 3, borderRadius: 999,
+                    background: 'rgba(255,255,255,0.08)', overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`,
+                      background: urgent ? '#ef4444' : low ? '#fbbf24' : '#c4b5fd',
+                      transition: 'width 0.15s linear',
+                    }} />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <div style={{ position: 'relative' }}>
@@ -832,21 +871,42 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div style={{
-              padding: '8px 14px',
-              border: `1px solid ${gameState.currentTurn === 'white' && !isGameOver ? '#fde68a' : 'var(--kf-border)'}`,
-              borderRadius: 8,
-              background: 'rgba(0,0,0,0.35)',
-              minWidth: 76, textAlign: 'center',
-              boxShadow: gameState.currentTurn === 'white' && !isGameOver ? '0 0 12px rgba(251,191,36,0.4)' : 'none',
-            }}>
-              <div className="kf-serif" style={{
-                color: whiteTime < 30 ? 'var(--kf-danger)' : 'var(--kf-cream)',
-                fontSize: 18, fontWeight: 900, letterSpacing: '0.06em', fontFeatureSettings: '"tnum"',
-              }}>
-                {formatClock(whiteTime)}
-              </div>
-            </div>
+            {(() => {
+              const isActive = gameState.currentTurn === 'white' && !isGameOver;
+              const urgent = whiteTime < 10;
+              const low = whiteTime < 30;
+              const initial = Math.max(1, activeConfig.timeControl.initial);
+              const pct = Math.max(0, Math.min(100, (whiteTime / initial) * 100));
+              return (
+                <div className={isActive && urgent ? 'kf-clock-urgent' : ''} style={{
+                  padding: '8px 14px',
+                  border: `1px solid ${isActive ? (urgent ? '#ef4444' : '#fde68a') : 'var(--kf-border)'}`,
+                  borderRadius: 8,
+                  background: 'rgba(0,0,0,0.35)',
+                  minWidth: 88, textAlign: 'center',
+                  boxShadow: isActive
+                    ? (urgent ? '0 0 16px rgba(239,68,68,0.55)' : '0 0 12px rgba(251,191,36,0.4)')
+                    : 'none',
+                }}>
+                  <div className="kf-serif" style={{
+                    color: urgent ? 'var(--kf-danger)' : low ? '#fbbf24' : 'var(--kf-cream)',
+                    fontSize: 18, fontWeight: 900, letterSpacing: '0.06em', fontFeatureSettings: '"tnum"',
+                  }}>
+                    {formatClock(whiteTime, urgent)}
+                  </div>
+                  <div style={{
+                    marginTop: 4, height: 3, borderRadius: 999,
+                    background: 'rgba(255,255,255,0.08)', overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`,
+                      background: urgent ? '#ef4444' : low ? '#fbbf24' : '#fde68a',
+                      transition: 'width 0.15s linear',
+                    }} />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* QUICK ACTIONS: SOUND / AMBIENT / HINT / FOLD */}

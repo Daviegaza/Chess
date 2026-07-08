@@ -7,6 +7,58 @@ export interface TimeControl {
   increment: number;  // seconds added per move
 }
 
+// ─── Time Control Presets ─────────────────────────────────────────────────────
+
+export type TimePresetId =
+  | 'bullet1_0' | 'bullet2_1'
+  | 'blitz3_0' | 'blitz3_2' | 'blitz5_0' | 'blitz5_3'
+  | 'rapid10_0' | 'rapid10_5' | 'rapid15_10'
+  | 'classic25_10' | 'classic30_20'
+  | 'marathon60_30'
+  | 'custom';
+
+export interface TimePreset {
+  id: TimePresetId;
+  label: string;
+  group: 'Bullet' | 'Blitz' | 'Rapid' | 'Classic' | 'Marathon' | 'Custom';
+  tc: TimeControl;
+  color: string;
+}
+
+export const TIME_PRESETS: TimePreset[] = [
+  { id: 'bullet1_0',   label: '1 + 0',    group: 'Bullet',   tc: { initial: 60,   increment: 0  }, color: '#ef4444' },
+  { id: 'bullet2_1',   label: '2 + 1',    group: 'Bullet',   tc: { initial: 120,  increment: 1  }, color: '#fb7185' },
+  { id: 'blitz3_0',    label: '3 + 0',    group: 'Blitz',    tc: { initial: 180,  increment: 0  }, color: '#f97316' },
+  { id: 'blitz3_2',    label: '3 + 2',    group: 'Blitz',    tc: { initial: 180,  increment: 2  }, color: '#fbbf24' },
+  { id: 'blitz5_0',    label: '5 + 0',    group: 'Blitz',    tc: { initial: 300,  increment: 0  }, color: '#fbbf24' },
+  { id: 'blitz5_3',    label: '5 + 3',    group: 'Blitz',    tc: { initial: 300,  increment: 3  }, color: '#facc15' },
+  { id: 'rapid10_0',   label: '10 + 0',   group: 'Rapid',    tc: { initial: 600,  increment: 0  }, color: '#10b981' },
+  { id: 'rapid10_5',   label: '10 + 5',   group: 'Rapid',    tc: { initial: 600,  increment: 5  }, color: '#10b981' },
+  { id: 'rapid15_10',  label: '15 + 10',  group: 'Rapid',    tc: { initial: 900,  increment: 10 }, color: '#22d3ee' },
+  { id: 'classic25_10',label: '25 + 10',  group: 'Classic',  tc: { initial: 1500, increment: 10 }, color: '#8b5cf6' },
+  { id: 'classic30_20',label: '30 + 20',  group: 'Classic',  tc: { initial: 1800, increment: 20 }, color: '#a78bfa' },
+  { id: 'marathon60_30', label: '60 + 30', group: 'Marathon', tc: { initial: 3600, increment: 30 }, color: '#f472b6' },
+  { id: 'custom',      label: 'CUSTOM',   group: 'Custom',   tc: { initial: 600,  increment: 5  }, color: '#e2e8f0' },
+];
+
+export const TIME_PRESET_MAP: Record<TimePresetId, TimePreset> =
+  TIME_PRESETS.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<TimePresetId, TimePreset>);
+
+export function formatTimeControl(tc: TimeControl): string {
+  const m = tc.initial >= 60
+    ? `${Math.round((tc.initial / 60) * 10) / 10}m`
+    : `${tc.initial}s`;
+  return `${m} + ${tc.increment}s`;
+}
+
+export function matchPreset(tc: TimeControl): TimePresetId {
+  for (const p of TIME_PRESETS) {
+    if (p.id === 'custom') continue;
+    if (p.tc.initial === tc.initial && p.tc.increment === tc.increment) return p.id;
+  }
+  return 'custom';
+}
+
 export interface LevelConfig {
   level: DifficultyLevel;
   label: string;

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import {
   ACHIEVEMENTS, DifficultyLevel, JACKPOT_TIERS, JACKPOT_TIER_ORDER,
   LEVEL_CONFIGS, LevelConfig, MissionsState, MISSION_TEMPLATES,
-  PointsState, SIDE_BETS, SideBetId, VipTier, nextVipTier,
+  PointsState, SIDE_BETS, SideBetId, TimeControl, VipTier, formatTimeControl, nextVipTier,
 } from '../types/game.types';
 import { DailyBonusStatus } from '../hooks/usePoints';
+import { UseTimePrefReturn } from '../hooks/useTimePref';
+import TimeControlPicker from './TimeControlPicker';
 
 const GOLD = '#fbbf24';
 const SILVER_INK = '#94a3b8';
@@ -63,7 +65,7 @@ const QuickPlayHero: React.FC<{ cfg: LevelConfig; onPlay: () => void }> = ({ cfg
       color: PLATINUM, marginTop: 6, lineHeight: 1,
     }}>{cfg.label}</div>
     <div style={{ marginTop: 8, color: 'rgba(226,232,240,0.88)', fontFamily: BODY, fontSize: 13 }}>
-      Buy-in: {cfg.cost} · Pays: +{cfg.reward} · {cfg.tagline}
+      Buy-in: {cfg.cost} · Pays: +{cfg.reward} · ⏱ {formatTimeControl(cfg.timeControl)}
     </div>
     <button onClick={onPlay} className="kf-tap" style={{
       marginTop: 20, padding: '14px 32px',
@@ -263,11 +265,15 @@ const RoomCards: React.FC<{
   tierNum: number;
   onSfx: (n: 'chipClick' | 'error' | 'hover') => void;
   isMobile: boolean;
-}> = ({ onSelect, tierNum, onSfx, isMobile }) => {
+  activeTc: TimeControl;
+}> = ({ onSelect, tierNum, onSfx, isMobile, activeTc }) => {
   const levels: DifficultyLevel[] = ['easy', 'medium', 'hard', 'expert', 'highroller'];
   return (
     <div>
-      <SectionHeader title="CHOOSE YOUR ROOM" />
+      <SectionHeader
+        title="CHOOSE YOUR ROOM"
+        right={<div style={cap(9, '0.18em', PURPLE)}>⏱ {formatTimeControl(activeTc)}</div>}
+      />
       <div style={{
         display: 'grid',
         gridTemplateColumns: isMobile ? 'repeat(5, minmax(220px, 1fr))' : 'repeat(5, 1fr)',
@@ -324,7 +330,7 @@ const RoomCards: React.FC<{
                 </div>
               </div>
               <div style={{ ...cap(9, '0.14em'), marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
-                {locked ? `🔒 VIP ${cfg.vipRequired} REQUIRED` : `${cfg.timeControl.initial / 60}m + ${cfg.timeControl.increment}s`}
+                {locked ? `🔒 VIP ${cfg.vipRequired} REQUIRED` : `⏱ ${formatTimeControl(activeTc)}`}
               </div>
             </button>
           );
@@ -422,26 +428,28 @@ interface Props {
   missions: MissionsState;
   onClaimDaily: () => void;
   onClaimMission: (id: string) => void;
-  onStartGame: (level: DifficultyLevel, betIds: SideBetId[]) => void;
+  onStartGame: (level: DifficultyLevel, betIds: SideBetId[], tcOverride?: TimeControl) => void;
   onSfx: (n: 'chipClick' | 'coin' | 'error' | 'hover' | 'missionComplete') => void;
   isMobile: boolean;
   onBrowseTables?: () => void;
   onOpenAchievements?: () => void;
+  timePref: UseTimePrefReturn;
 }
 
 const LobbyBody: React.FC<Props> = ({
   points, tier, dailyBonus, missions,
   onClaimDaily, onClaimMission, onStartGame, onSfx, isMobile,
-  onBrowseTables, onOpenAchievements,
+  onBrowseTables, onOpenAchievements, timePref,
 }) => {
   const [picks, setPicks] = useState<SideBetId[]>([]);
   const togglePick = (id: SideBetId) =>
     setPicks(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const quickLevel: DifficultyLevel = tier.tier >= 1 ? 'medium' : 'easy';
-  const quickCfg = LEVEL_CONFIGS[quickLevel];
+  const baseQuickCfg = LEVEL_CONFIGS[quickLevel];
+  const quickCfg: LevelConfig = { ...baseQuickCfg, timeControl: timePref.selectedTc };
 
-  const start = (level: DifficultyLevel) => onStartGame(level, picks);
+  const start = (level: DifficultyLevel) => onStartGame(level, picks, timePref.selectedTc);
 
   return (
     <div style={{ padding: isMobile ? '10px 4px 20px' : '4px 4px 12px', color: PLATINUM, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -457,13 +465,21 @@ const LobbyBody: React.FC<Props> = ({
       <VipAccessBar tier={tier} xp={points.vipXp} />
       <DailyBonusBar status={dailyBonus} onClaim={onClaimDaily} onSfx={onSfx} />
 
+      <TimeControlPicker timePref={timePref} onSfx={onSfx} compact={isMobile} />
+
       <DailyMissions missions={missions} onClaim={onClaimMission} onSfx={onSfx} isMobile={isMobile} />
 
       <div className={isMobile ? 'kf-scroll-x' : ''} style={{
         overflowX: isMobile ? 'auto' : 'visible',
         WebkitOverflowScrolling: 'touch',
       }}>
-        <RoomCards onSelect={start} tierNum={tier.tier} onSfx={onSfx} isMobile={isMobile} />
+        <RoomCards
+          onSelect={start}
+          tierNum={tier.tier}
+          onSfx={onSfx}
+          isMobile={isMobile}
+          activeTc={timePref.selectedTc}
+        />
       </div>
 
       <button
